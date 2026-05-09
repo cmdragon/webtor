@@ -15,7 +15,7 @@ ARG TORRENT_ARCHIVER_COMMIT="5ec51fe299641ca7ed3e5cb19f9a2ab370cca89a"
 ARG SRT2VTT_COMMIT="5a18d26bee380d6964e074713be2a4a98b2d54df"
 ARG TORRENT_HTTP_PROXY_COMMIT="d08b3921bb193ef863c629b96f1c0b5e00b5fc20"
 ARG REST_API_COMMIT="4fe937f800f4d033534be10119e7022ec2888e10"
-ARG WEB_UI_COMMIT="6d5f368c7fbd9472842b76a76d740c8e3b5ee36e"
+ARG WEB_UI_COMMIT
 
 # Nginx deps
 ARG NGINX_VERSION="1.29.3"
@@ -176,13 +176,22 @@ ARG WEB_UI_COMMIT
 
 ENV CGO_ENABLED=0 GOOS=linux
 
-RUN echo $WEB_UI_COMMIT > /app/bin/web-ui.commit && \
-    git clone https://github.com/cmdragon/webtor-web-ui /app/src/web-ui && \
-    cd /app/src/web-ui && \
-    git checkout $WEB_UI_COMMIT && \
-    go build \
-    -ldflags '-w -s -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=ignore' \
-    -a -installsuffix cgo -o /app/bin/web-ui
+RUN if [ -n "$WEB_UI_COMMIT" ]; then \
+      echo $WEB_UI_COMMIT > /app/bin/web-ui.commit && \
+      git clone https://github.com/cmdragon/webtor-web-ui /app/src/web-ui && \
+      cd /app/src/web-ui && \
+      git checkout $WEB_UI_COMMIT && \
+      go build \
+      -ldflags '-w -s -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=ignore' \
+      -a -installsuffix cgo -o /app/bin/web-ui; \
+    else \
+      echo "latest" > /app/bin/web-ui.commit && \
+      git clone https://github.com/cmdragon/webtor-web-ui /app/src/web-ui && \
+      cd /app/src/web-ui && \
+      go build \
+      -ldflags '-w -s -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=ignore' \
+      -a -installsuffix cgo -o /app/bin/web-ui; \
+    fi
 
 FROM node:$NODE_VER AS build-web-ui-assets
 
